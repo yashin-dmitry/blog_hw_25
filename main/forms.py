@@ -2,7 +2,7 @@ from django import forms
 from .models import Product
 
 class ProductForm(forms.ModelForm):
-    FORBIDDEN_WORDS = ['bad', 'evil', 'harmful']
+    FORBIDDEN_WORDS = ['казино', 'криптовалюта', 'крипта', 'биржа', 'дешево', 'бесплатно', 'обман', 'полиция', 'радар']
 
     class Meta:
         model = Product
