@@ -19,8 +19,9 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', include('main.urls')),  # Основные маршруты
+    path('users/', include('users.urls')),  # Маршруты для приложения users
     path('blogs/', include('blog.urls')),
-    path('main/', include('main.urls')),
 ]
 
 

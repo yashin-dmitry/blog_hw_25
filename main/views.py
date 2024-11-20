@@ -5,7 +5,7 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic import ListView, DetailView
 from .forms import ProductForm
 
-
+# Представления для MyModel
 class MyModelCreateView(CreateView):
     model = MyModel
     fields = ['name', 'description']
@@ -33,7 +33,7 @@ class MyModelDeleteView(DeleteView):
     template_name = 'main/mymodel_confirm_delete.html'
     success_url = reverse_lazy('main:mymodel_list')
 
-
+# Представления для Product
 class ProductCreateView(CreateView):
     model = Product
     form_class = ProductForm
@@ -70,3 +70,7 @@ def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
     context = {'product': product}
     return render(request, 'main/product_detail.html', context)
+
+
+def register():
+    return None
