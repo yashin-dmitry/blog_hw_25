@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>{{ object.title }}</h1>
+  <p>{{ object.content }}</p>
+  <p>Published on {{ object.pub_date }}</p>
+  <p>Views: {{ object.views }}</p>
+  <a href="{% url 'blog_update' object.pk %}">Edit</a>
+  <a href="{% url 'blog_delete' object.pk %}">Delete</a>
+{% endblock %}
