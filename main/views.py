@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic import ListView, DetailView
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, permission_required
 from .models import Product, MyModel
 from .forms import ProductForm
@@ -56,34 +56,32 @@ class ProductDetailView(LoginRequiredMixin, DetailView):
     template_name = 'main/product_detail.html'
     context_object_name = 'product'
 
-class ProductUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class ProductUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Product
     form_class = ProductForm
     template_name = 'main/product_form.html'
     success_url = reverse_lazy('main:product_list')
-    permission_required = 'your_app.change_product'
 
-    def has_permission(self):
+    def test_func(self):
         product = self.get_object()
-        return super().has_permission() or self.request.user == product.owner
+        return self.request.user == product.owner or self.request.user.has_perm('your_app.change_product')
 
-class ProductDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class ProductDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Product
     template_name = 'main/product_confirm_delete.html'
     success_url = reverse_lazy('main:product_list')
-    permission_required = 'your_app.delete_product'
 
-    def has_permission(self):
+    def test_func(self):
         product = self.get_object()
-        return super().has_permission() or self.request.user == product.owner
+        return self.request.user == product.owner or self.request.user.has_perm('main.delete_product')
 
 @login_required
-@permission_required('your_app.can_unpublish_product', raise_exception=True)
+@permission_required('main.can_unpublish_product', raise_exception=True)
 def unpublish_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     product.is_published = False
     product.save()
-    return redirect('product_list')
+    return redirect('main:product_list')
 
 def index(request):
     products = Product.objects.all()
