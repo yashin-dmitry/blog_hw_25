@@ -1,8 +1,13 @@
-from django.shortcuts import render, get_object_or_404
-from .models import Product, MyModel
+from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic import ListView, DetailView
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.decorators import login_required, permission_required
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+from django.core.cache import cache
+from .models import Product, MyModel
 from .forms import ProductForm
 
 # Представления для MyModel
@@ -34,32 +39,53 @@ class MyModelDeleteView(DeleteView):
     success_url = reverse_lazy('main:mymodel_list')
 
 # Представления для Product
-class ProductCreateView(CreateView):
+class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
     form_class = ProductForm
     template_name = 'main/product_form.html'
     success_url = reverse_lazy('main:product_list')
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        return super().form_valid(form)
 
 class ProductListView(ListView):
     model = Product
     template_name = 'main/product_list.html'
     context_object_name = 'products'
 
-class ProductDetailView(DetailView):
+@method_decorator(cache_page(60 * 15), name='dispatch')
+class ProductDetailView(LoginRequiredMixin, DetailView):
     model = Product
     template_name = 'main/product_detail.html'
     context_object_name = 'product'
 
-class ProductUpdateView(UpdateView):
+class ProductUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Product
     form_class = ProductForm
     template_name = 'main/product_form.html'
     success_url = reverse_lazy('main:product_list')
 
-class ProductDeleteView(DeleteView):
+    def test_func(self):
+        product = self.get_object()
+        return self.request.user == product.owner or self.request.user.has_perm('your_app.change_product')
+
+class ProductDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Product
     template_name = 'main/product_confirm_delete.html'
     success_url = reverse_lazy('main:product_list')
+
+    def test_func(self):
+        product = self.get_object()
+        return self.request.user == product.owner or self.request.user.has_perm('main.delete_product')
+
+@login_required
+@permission_required('main.can_unpublish_product', raise_exception=True)
+def unpublish_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    product.is_published = False
+    product.save()
+    return redirect('main:product_list')
 
 def index(request):
     products = Product.objects.all()
@@ -71,6 +97,24 @@ def product_detail(request, pk):
     context = {'product': product}
     return render(request, 'main/product_detail.html', context)
 
-
 def register():
     return None
+
+# Сервисная функция для получения продуктов по категории
+def get_products_by_category(category_id):
+    cache_key = f'products_by_category_{category_id}'
+    products = cache.get(cache_key)
+    if not products:
+        products = Product.objects.filter(category_id=category_id)
+        cache.set(cache_key, products, 60 * 15)  # Кешировать на 15 минут
+    return products
+
+# Представление для отображения продуктов в указанной категории
+class ProductByCategoryListView(ListView):
+    model = Product
+    template_name = 'main/product_by_category_list.html'
+    context_object_name = 'products'
+
+    def get_queryset(self):
+        category_id = self.kwargs.get('category_id')
+        return get_products_by_category(category_id)
