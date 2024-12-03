@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
 class MyModel(models.Model):
     name = models.CharField(max_length=300)
     description = models.TextField()
@@ -11,17 +10,15 @@ class MyModel(models.Model):
     def __str__(self):
         return self.name
 
-
 class Category(models.Model):
     """
     В модели Category определены следующие поля:
 
-name: поле для хранения названия категории, ограниченное максимальной длиной
-в 100 символов.
+    name: поле для хранения названия категории, ограниченное максимальной длиной
+    в 100 символов.
 
-description: поле для хранения описания категории, которое может быть пустым.
+    description: поле для хранения описания категории, которое может быть пустым.
     """
-    objects = None
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
 
@@ -31,7 +28,6 @@ description: поле для хранения описания категори�
     class Meta:
         verbose_name = 'Category'
         verbose_name_plural = 'Categories'
-
 
 class Product(models.Model):
     """

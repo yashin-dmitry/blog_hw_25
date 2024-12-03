@@ -4,6 +4,9 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, permission_required
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+from django.core.cache import cache
 from .models import Product, MyModel
 from .forms import ProductForm
 
@@ -51,6 +54,7 @@ class ProductListView(ListView):
     template_name = 'main/product_list.html'
     context_object_name = 'products'
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class ProductDetailView(LoginRequiredMixin, DetailView):
     model = Product
     template_name = 'main/product_detail.html'
@@ -95,3 +99,22 @@ def product_detail(request, pk):
 
 def register():
     return None
+
+# Сервисная функция для получения продуктов по категории
+def get_products_by_category(category_id):
+    cache_key = f'products_by_category_{category_id}'
+    products = cache.get(cache_key)
+    if not products:
+        products = Product.objects.filter(category_id=category_id)
+        cache.set(cache_key, products, 60 * 15)  # Кешировать на 15 минут
+    return products
+
+# Представление для отображения продуктов в указанной категории
+class ProductByCategoryListView(ListView):
+    model = Product
+    template_name = 'main/product_by_category_list.html'
+    context_object_name = 'products'
+
+    def get_queryset(self):
+        category_id = self.kwargs.get('category_id')
+        return get_products_by_category(category_id)

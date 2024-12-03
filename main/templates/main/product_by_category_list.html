@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Products by Category</title>
+</head>
+<body>
+    <h1>Products in Category</h1>
+    <ul>
+        {% for product in products %}
+            <li>{{ product.name }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'main:product_list' %}">Back to List</a>
+</body>
+</html>
